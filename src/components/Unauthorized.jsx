@@ -2,6 +2,8 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, LogOut } from 'lucide-react';
 
+// This screen only appears when an admin has manually suspended a user (active: false).
+// By default, all new Google sign-ins are automatically active (active: true).
 export default function Unauthorized() {
   const { logout, user } = useAuth();
 
@@ -13,9 +15,10 @@ export default function Unauthorized() {
         </div>
         
         <div className="login-header">
-          <h2>Acceso Restringido</h2>
+          <h2>Cuenta Suspendida</h2>
           <p style={{ marginTop: '0.75rem', fontSize: '0.95rem', lineHeight: '1.5' }}>
-            Tu cuenta <strong>({user?.email})</strong> aún no está autorizada. Pide acceso al administrador.
+            Tu cuenta <strong>({user?.email})</strong> ha sido suspendida por un administrador. 
+            Comunícate con el equipo de administración de GEMB para solicitar reactivación.
           </p>
         </div>
 

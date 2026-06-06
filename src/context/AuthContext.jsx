@@ -63,14 +63,16 @@ export const AuthProvider = ({ children }) => {
             await createMember(firebaseUser.uid, adminData);
             profile = await getMember(firebaseUser.uid);
           } 
-          // Auto-create inactive member account for new users
+          // Auto-create active member account for new users
+          // All new Google sign-ins are automatically active (active:true)
+          // Unauthorized screen only shows if an admin manually sets active:false
           else if (!profile) {
             const memberData = {
               email: firebaseUser.email,
               displayName: firebaseUser.displayName || 'Miembro Nuevo',
               photoURL: firebaseUser.photoURL || '',
               role: 'member',
-              active: false
+              active: true
             };
             await createMember(firebaseUser.uid, memberData);
             profile = await getMember(firebaseUser.uid);

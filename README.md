@@ -86,6 +86,8 @@ VITE_FIREBASE_APP_ID=tu_app_id_aqui
 
 ## 🔒 4. Publicar Reglas de Seguridad en Cloud Firestore
 
+> **Modelo de acceso actualizado**: Cualquier usuario que inicie sesión con Google se registra automáticamente como miembro activo (`active: true`, `role: "member"`). La pantalla de "Cuenta Suspendida" solo aparece si un administrador suspende manualmente a un usuario.
+
 Las reglas del archivo `firestore.rules` del proyecto deben pegarse en la pestaña **Rules** de la sección Firestore en la consola de Firebase:
 
 ```javascript
@@ -110,26 +112,52 @@ service cloud.firestore {
     }
 
     match /members/{userId} {
+      // Any active member can read the full members list
       allow read: if isMember();
-      allow create: if signedIn() && request.auth.token.email == "fundacionsocial@gimnasioemocionalmb.com";
+      // Any authenticated user can create their OWN member document (auto-registration)
+      allow create: if signedIn() && request.auth.uid == userId;
+      // Only admins can update or delete any member document
       allow update, delete: if isAdmin();
     }
 
     match /tasks/{taskId} {
+      // Any active member can read all tasks (shared global board)
       allow read: if isMember();
+      // Any active member can create tasks
       allow create: if isMember();
+      // Any active member can update tasks (edit, status, archive)
       allow update: if isMember();
+      // Only admins can permanently delete tasks
       allow delete: if isAdmin();
     }
 
     match /activity/{activityId} {
       allow read: if isMember();
       allow create: if isMember();
+      // Activity log entries are immutable
       allow update, delete: if false;
     }
   }
 }
 ```
+
+---
+
+## 👥 4b. Modelo de Acceso y Roles
+
+| Acción | Miembro | Administrador |
+|---|---|---|
+| Ver tablero global de tareas | ✅ | ✅ |
+| Crear tareas | ✅ | ✅ |
+| Editar tareas | ✅ | ✅ |
+| Cambiar estado de tareas | ✅ | ✅ |
+| Archivar tareas | ✅ | ✅ |
+| Eliminar tareas definitivamente | ❌ | ✅ |
+| Ver lista de miembros | ✅ | ✅ |
+| Cambiar roles de miembros | ❌ | ✅ |
+| Suspender miembros (`active: false`) | ❌ | ✅ |
+
+**Registro automático**: Cualquier persona con cuenta Google que acceda a la app queda registrada automáticamente como miembro activo. El correo `fundacionsocial@gimnasioemocionalmb.com` siempre se registra como administrador.
 
 ---
 
@@ -141,8 +169,9 @@ Para iniciar el servidor de desarrollo local para la versión web, ejecuta:
 npm run dev
 ```
 
-Esto abrirá la aplicación en `http://localhost:5173`. 
-- *Autenticación Automática del Administrador*: Para habilitar el primer ingreso al panel, inicia sesión con el correo **`fundacionsocial@gimnasioemocionalmb.com`**. El sistema lo reconocerá automáticamente y registrará este correo como Administrador (`admin` activo) para que puedas aprobar a otros miembros que intenten entrar.
+Esto abrirá la aplicación en `http://localhost:5173`.
+- **Registro abierto**: Cualquier cuenta de Google puede entrar directamente como miembro activo.
+- **Bootstrap de administrador**: La primera vez que `fundacionsocial@gimnasioemocionalmb.com` inicie sesión, el sistema creará automáticamente su perfil de administrador.
 
 ---
 
