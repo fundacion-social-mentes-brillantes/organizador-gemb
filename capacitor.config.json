@@ -1,0 +1,8 @@
+{
+  "appId": "com.gemb.organizador",
+  "appName": "Organizador GEMB",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
