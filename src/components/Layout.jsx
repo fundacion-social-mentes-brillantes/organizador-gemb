@@ -1,5 +1,6 @@
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
+import BrandLogo from './BrandLogo';
 import MemberAvatar from './MemberAvatar';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +32,7 @@ export default function Layout({ currentTab, setCurrentTab, onNewTaskClick, chil
       <div className="main-content">
         <header className="top-header">
           <div className="header-title-container">
+            <BrandLogo variant="icon" className="header-brand-icon" />
             <h1>{getHeaderTitle()}</h1>
           </div>
           <div className="header-actions">

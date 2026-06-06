@@ -32,6 +32,19 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 ```
 
+## Identidad visual por tema
+
+Los assets de marca viven en `public/brand/`:
+
+- `logo-light.png`
+- `logo-dark.png`
+- `logo-pink.png`
+- `app-icon-light.png`
+- `app-icon-dark.png`
+- `app-icon-pink.png`
+
+La app usa `BrandLogo` para seleccionar automaticamente el logo segun `document.documentElement.dataset.theme` y `localStorage`.
+
 ## Reglas Firestore
 
 Pega el contenido de `firestore.rules` en Firebase Console > Firestore Database > Rules.
@@ -184,3 +197,22 @@ No subas `android/app/google-services.json` al repositorio. Si se necesita para 
 ## Despliegue
 
 Vercel debe tener configuradas las variables de entorno anteriores en el dashboard del proyecto. Al hacer push a `main`, Vercel dispara el despliegue de produccion conectado al repositorio.
+
+## MCP local
+
+El MCP para operar datos basicos de Firestore esta en `mcp/organizador-gemb/`.
+
+Instalacion:
+
+```bash
+cd mcp/organizador-gemb
+npm install
+```
+
+Configuracion:
+
+- Usa `GOOGLE_APPLICATION_CREDENTIALS` o `FIREBASE_SERVICE_ACCOUNT_JSON`.
+- No subas `.env`, `serviceAccount*.json` ni `*firebase-adminsdk*.json`.
+- `delete_task` queda deshabilitado por defecto con `MCP_ALLOW_DELETE=false`.
+
+Consulta `mcp/organizador-gemb/README.md` para el ejemplo completo de cliente MCP.

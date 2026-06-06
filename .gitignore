@@ -18,6 +18,10 @@ dist-ssr
 .env.production.local
 android/app/google-services.json
 google-services.json
+mcp/organizador-gemb/.env
+mcp/organizador-gemb/serviceAccount*.json
+**/serviceAccount*.json
+**/*firebase-adminsdk*.json
 
 # Editor directories and files
 .vscode/*

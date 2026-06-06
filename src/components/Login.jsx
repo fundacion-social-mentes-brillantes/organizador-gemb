@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import BrandLogo from './BrandLogo';
 
 export default function Login() {
   const { loginWithGoogle, loading } = useAuth();
@@ -19,9 +20,7 @@ export default function Login() {
   return (
     <div className="login-container">
       <div className="login-card">
-        <div className="login-logo">
-          <img src="/favicon.png" alt="GEMB Logo" style={{ width: '48px', height: '48px' }} />
-        </div>
+        <BrandLogo variant="full" className="login-brand-logo" />
         <div className="login-header">
           <h2>Organizador GEMB</h2>
           <p>Centro simple de tareas del equipo</p>

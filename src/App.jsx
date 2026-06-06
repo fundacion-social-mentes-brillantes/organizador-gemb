@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, LogOut, Settings, Users } from 'lucide-react';
+import { CheckCircle2, LogOut, Users } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import BrandLogo from './components/BrandLogo';
 import Layout from './components/Layout';
 import Login from './components/Login';
-import MemberAvatar from './components/MemberAvatar';
 import TaskModal from './components/TaskModal';
 import ThemeToggle from './components/ThemeToggle';
 import Unauthorized from './components/Unauthorized';
@@ -30,9 +30,7 @@ function ConfigurationError() {
   return (
     <div className="login-container">
       <div className="login-card">
-        <div className="login-logo" style={{ background: 'var(--danger-bg)', color: 'var(--danger)' }}>
-          <Settings size={38} />
-        </div>
+        <BrandLogo variant="full" className="login-brand-logo" />
         <div className="login-header">
           <h2>Configura Firebase</h2>
           <p>Faltan variables `VITE_FIREBASE_*` validas para iniciar la aplicacion.</p>
@@ -47,7 +45,7 @@ function MobileMenu({ memberProfile, setCurrentTab, logout }) {
     <div className="page-container mobile-menu-page">
       <div className="mobile-menu-stack">
         <div className="card mobile-profile-card">
-          <MemberAvatar member={memberProfile} size={72} />
+          <BrandLogo variant="icon" className="mobile-brand-icon" />
           <div>
             <h3>{memberProfile?.displayName || 'Miembro GEMB'}</h3>
             <p>{memberProfile?.email}</p>

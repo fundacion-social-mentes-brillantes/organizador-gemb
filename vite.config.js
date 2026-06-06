@@ -8,7 +8,17 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
+      includeAssets: [
+        'favicon.png',
+        'pwa-192x192.png',
+        'pwa-512x512.png',
+        'brand/logo-light.png',
+        'brand/logo-dark.png',
+        'brand/logo-pink.png',
+        'brand/app-icon-light.png',
+        'brand/app-icon-dark.png',
+        'brand/app-icon-pink.png'
+      ],
       manifest: {
         name: 'Organizador GEMB',
         short_name: 'GEMB Tareas',

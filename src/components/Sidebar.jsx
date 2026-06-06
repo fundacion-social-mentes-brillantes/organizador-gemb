@@ -7,6 +7,7 @@ import {
   Plus,
   Users
 } from 'lucide-react';
+import BrandLogo from './BrandLogo';
 import ThemeToggle from './ThemeToggle';
 
 export default function Sidebar({ currentTab, setCurrentTab, onNewTaskClick, onLogout }) {
@@ -21,6 +22,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewTaskClick, onL
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
+        <BrandLogo variant="full" className="sidebar-brand-logo" />
         <h2>GEMB Tareas</h2>
         <p>Centro simple del equipo</p>
       </div>
