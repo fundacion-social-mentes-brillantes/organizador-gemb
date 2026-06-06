@@ -18,19 +18,19 @@ export const createMember = async (uid, memberData) => {
     displayName: memberData.displayName || '',
     photoURL: memberData.photoURL || '',
     role: memberData.role || 'member',
-    active: memberData.active ?? false,
+    active: memberData.active ?? true,
     createdAt: serverTimestamp()
   });
 };
 
-export const updateMemberStatus = async (uid, active) => {
+export const activateOwnMemberProfile = async (uid, profileData) => {
   const docRef = doc(db, 'members', uid);
-  await updateDoc(docRef, { active });
-};
-
-export const updateMemberRole = async (uid, role) => {
-  const docRef = doc(db, 'members', uid);
-  await updateDoc(docRef, { role });
+  await updateDoc(docRef, {
+    active: true,
+    displayName: profileData.displayName || '',
+    photoURL: profileData.photoURL || '',
+    updatedAt: serverTimestamp()
+  });
 };
 
 export const subscribeToMembers = (onUpdate) => {

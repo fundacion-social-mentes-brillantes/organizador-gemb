@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 export default function MemberAvatar({ member, size = 32, className = '' }) {
   const [imgError, setImgError] = useState(false);

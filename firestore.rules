@@ -13,57 +13,94 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/members/$(request.auth.uid)).data.active == true;
     }
 
-    function isAdmin() {
+    function memberIdentityIsValid(userId) {
+      return request.auth.uid == userId
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.active == true;
+    }
+
+    function memberCreateShapeIsSafe() {
+      return request.resource.data.keys().hasOnly([
+        'uid',
+        'email',
+        'displayName',
+        'photoURL',
+        'role',
+        'active',
+        'createdAt'
+      ])
+      && request.resource.data.keys().hasAll(['uid', 'email', 'active', 'createdAt'])
+      && request.resource.data.get('role', 'member') == 'member'
+      && request.resource.data.get('displayName', '') is string
+      && request.resource.data.get('photoURL', '') is string
+      && request.resource.data.createdAt == request.time;
+    }
+
+    function immutableMemberFieldsStayPut() {
+      return request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.get('role', null) == resource.data.get('role', null)
+        && request.resource.data.get('createdAt', null) == resource.data.get('createdAt', null);
+    }
+
+    function safeProfileFields() {
+      return request.resource.data.get('displayName', '') is string
+        && request.resource.data.get('photoURL', '') is string;
+    }
+
+    function safeProfileUpdate() {
       return isMember()
-        && get(/databases/$(database)/documents/members/$(request.auth.uid)).data.role == "admin";
+        && request.resource.data.active == resource.data.active
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName',
+          'photoURL',
+          'updatedAt'
+        ])
+        && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time)
+        && safeProfileFields();
+    }
+
+    function legacySelfActivation() {
+      return signedIn()
+        && resource.data.active != true
+        && request.resource.data.active == true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'active',
+          'displayName',
+          'photoURL',
+          'updatedAt'
+        ])
+        && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time)
+        && safeProfileFields();
     }
 
     match /members/{userId} {
-      // Cualquier usuario autenticado puede leer SU PROPIO documento
-      // (necesario para verificar si ya existe y si está activo durante el primer login)
       allow get: if signedIn() && request.auth.uid == userId;
-
-      // Solo miembros activos pueden listar todos los miembros
       allow list: if isMember();
 
-      // Cualquier usuario autenticado puede crear SU PROPIO documento (auto-registro)
-      // con restricciones estrictas de integridad de datos
       allow create: if signedIn()
-        && request.auth.uid == userId
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.email == request.auth.token.email
-        && request.resource.data.active == true
-        && (
-          (
-            request.auth.token.email == "fundacionsocial@gimnasioemocionalmb.com"
-            && request.resource.data.role == "admin"
-          )
-          ||
-          (
-            request.auth.token.email != "fundacionsocial@gimnasioemocionalmb.com"
-            && request.resource.data.role == "member"
-          )
-        );
+        && memberIdentityIsValid(userId)
+        && memberCreateShapeIsSafe();
 
-      // Solo admins pueden modificar o suspender miembros
-      allow update, delete: if isAdmin();
+      allow update: if signedIn()
+        && request.auth.uid == userId
+        && immutableMemberFieldsStayPut()
+        && (safeProfileUpdate() || legacySelfActivation());
+
+      allow delete: if false;
     }
 
     match /tasks/{taskId} {
-      // Cualquier miembro activo puede ver todas las tareas (tablero global compartido)
       allow read: if isMember();
-      // Cualquier miembro activo puede crear tareas
       allow create: if isMember();
-      // Cualquier miembro activo puede editar, cambiar estado, archivar
       allow update: if isMember();
-      // Solo admins pueden eliminar tareas definitivamente
-      allow delete: if isAdmin();
+      allow delete: if isMember();
     }
 
     match /activity/{activityId} {
       allow read: if isMember();
       allow create: if isMember();
-      // El registro de auditoría es inmutable
       allow update, delete: if false;
     }
   }

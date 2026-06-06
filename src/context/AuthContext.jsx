@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { 
   signInWithPopup, 
   signInWithRedirect, 
@@ -8,39 +8,44 @@ import {
   signOut 
 } from 'firebase/auth';
 import { Capacitor } from '@capacitor/core';
-import { auth, googleProvider } from '../lib/firebase';
-import { getMember, createMember } from '../services/membersService';
+import { auth, googleProvider, firebaseConfigReady } from '../lib/firebase';
+import { getMember, createMember, activateOwnMemberProfile } from '../services/membersService';
 
 const AuthContext = createContext(null);
 
-const BOOTSTRAP_ADMIN_EMAIL = "fundacionsocial@gimnasioemocionalmb.com";
-
-// Helper to dynamically load the native google auth plugin safely at runtime
 const getNativeGoogleAuth = async () => {
   try {
     return await import(/* @vite-ignore */ '@codetrix-studio/capacitor-google-auth');
-  } catch (e) {
+  } catch {
     try {
       return await import(/* @vite-ignore */ '@capacitor-community/google-auth');
-    } catch (err) {
-      throw new Error("Capacitor Google Auth plugin not found at runtime");
+    } catch (error) {
+      throw new Error('Capacitor Google Auth plugin not found at runtime', { cause: error });
     }
   }
 };
+
+const getErrorCode = (error) => error?.code || error?.name || 'unknown_error';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [memberProfile, setMemberProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
+  const [configError] = useState(!firebaseConfigReady);
 
   useEffect(() => {
+    if (!firebaseConfigReady || !auth || !googleProvider) {
+      setLoading(false);
+      return undefined;
+    }
+
     // Initialize native Google Auth if running inside Capacitor
     if (Capacitor.isNativePlatform()) {
       getNativeGoogleAuth().then(({ GoogleAuth }) => {
         GoogleAuth.initialize();
-      }).catch(err => {
-        console.warn("Capacitor Google Auth plugin not loaded/configured yet. Falling back to Firebase Web Auth.", err);
+      }).catch((error) => {
+        console.warn('Capacitor Google Auth plugin not ready:', getErrorCode(error));
       });
     }
 
@@ -50,23 +55,8 @@ export const AuthProvider = ({ children }) => {
         setUser(firebaseUser);
         try {
           let profile = await getMember(firebaseUser.uid);
-          
-          // Auto-bootstrap admin account
-          if (!profile && firebaseUser.email === BOOTSTRAP_ADMIN_EMAIL) {
-            const adminData = {
-              email: firebaseUser.email,
-              displayName: firebaseUser.displayName || 'Admin GEMB',
-              photoURL: firebaseUser.photoURL || '',
-              role: 'admin',
-              active: true
-            };
-            await createMember(firebaseUser.uid, adminData);
-            profile = await getMember(firebaseUser.uid);
-          } 
-          // Auto-create active member account for new users
-          // All new Google sign-ins are automatically active (active:true)
-          // Unauthorized screen only shows if an admin manually sets active:false
-          else if (!profile) {
+
+          if (!profile) {
             const memberData = {
               email: firebaseUser.email,
               displayName: firebaseUser.displayName || 'Miembro Nuevo',
@@ -76,12 +66,19 @@ export const AuthProvider = ({ children }) => {
             };
             await createMember(firebaseUser.uid, memberData);
             profile = await getMember(firebaseUser.uid);
+          } else if (profile.active !== true) {
+            await activateOwnMemberProfile(firebaseUser.uid, {
+              displayName: firebaseUser.displayName || profile.displayName || 'Miembro',
+              photoURL: firebaseUser.photoURL || profile.photoURL || ''
+            });
+            profile = await getMember(firebaseUser.uid);
           }
 
-          setMemberProfile(profile);
-          setUnauthorized(!profile || !profile.active);
+          const normalizedProfile = profile ? { ...profile, active: true } : null;
+          setMemberProfile(normalizedProfile);
+          setUnauthorized(!normalizedProfile);
         } catch (error) {
-          console.error("Error fetching member profile:", error);
+          console.error('Error loading member profile:', getErrorCode(error));
           setUnauthorized(true);
         }
       } else {
@@ -96,6 +93,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const loginWithGoogle = async () => {
+    if (!firebaseConfigReady || !auth || !googleProvider) {
+      throw new Error('firebase_config_unavailable');
+    }
+
     setLoading(true);
     try {
       if (Capacitor.isNativePlatform()) {
@@ -104,16 +105,15 @@ export const AuthProvider = ({ children }) => {
           const nativeUser = await GoogleAuth.signIn();
           const credential = GoogleAuthProvider.credential(nativeUser.authentication.idToken);
           await signInWithCredential(auth, credential);
-        } catch (err) {
-          console.warn("Native Google Login plugin failed, trying standard popup/redirect fallback:", err);
-          // Redirect is generally more stable on mobile browsers / hybrid apps
+        } catch (error) {
+          console.warn('Native Google login fallback:', getErrorCode(error));
           await signInWithRedirect(auth, googleProvider);
         }
       } else {
         await signInWithPopup(auth, googleProvider);
       }
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error('Login failed:', getErrorCode(error));
       setLoading(false);
       throw error;
     }
@@ -126,20 +126,20 @@ export const AuthProvider = ({ children }) => {
         try {
           const { GoogleAuth } = await getNativeGoogleAuth();
           await GoogleAuth.signOut();
-        } catch (e) {
-          console.warn("Error signing out from native Google Auth:", e);
+        } catch (error) {
+          console.warn('Native Google sign out failed:', getErrorCode(error));
         }
       }
       await signOut(auth);
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error('Logout failed:', getErrorCode(error));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, memberProfile, loading, unauthorized, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, memberProfile, loading, unauthorized, configError, loginWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   );

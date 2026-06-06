@@ -11,13 +11,41 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const googleProvider = new GoogleAuthProvider();
+const requiredConfigKeys = [
+  'apiKey',
+  'authDomain',
+  'projectId',
+  'storageBucket',
+  'messagingSenderId',
+  'appId'
+];
 
-// Standard scopes for user email and profile
-googleProvider.addScope('email');
-googleProvider.addScope('profile');
+const missingConfigKeys = requiredConfigKeys.filter((key) => !firebaseConfig[key]);
+let firebaseConfigReady = missingConfigKeys.length === 0;
 
-export { app, auth, db, googleProvider };
+let app = null;
+let auth = null;
+let db = null;
+let googleProvider = null;
+
+if (firebaseConfigReady) {
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    googleProvider = new GoogleAuthProvider();
+    googleProvider.addScope('email');
+    googleProvider.addScope('profile');
+  } catch {
+    firebaseConfigReady = false;
+    app = null;
+    auth = null;
+    db = null;
+    googleProvider = null;
+    console.error('Firebase config could not be initialized. Check VITE_FIREBASE_* environment variables.');
+  }
+} else {
+  console.error('Firebase config is incomplete. Check VITE_FIREBASE_* environment variables.');
+}
+
+export { app, auth, db, googleProvider, firebaseConfigReady };

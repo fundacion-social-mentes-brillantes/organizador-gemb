@@ -1,27 +1,22 @@
-import React from 'react';
-import { 
-  Calendar, 
-  LayoutGrid, 
-  ListTodo, 
-  CheckCircle2, 
-  Users, 
-  Plus, 
-  LogOut 
+import {
+  Calendar,
+  CheckCircle2,
+  LayoutGrid,
+  ListTodo,
+  LogOut,
+  Plus,
+  Users
 } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 
-export default function Sidebar({ currentTab, setCurrentTab, onNewTaskClick, memberProfile, onLogout }) {
-  const isAdmin = memberProfile?.role === 'admin';
-
+export default function Sidebar({ currentTab, setCurrentTab, onNewTaskClick, onLogout }) {
   const menuItems = [
     { id: 'today', name: 'Hoy', icon: Calendar },
     { id: 'board', name: 'Tablero', icon: LayoutGrid },
     { id: 'all', name: 'Todas', icon: ListTodo },
-    { id: 'done', name: 'Hechas', icon: CheckCircle2 }
+    { id: 'done', name: 'Hechas', icon: CheckCircle2 },
+    { id: 'members', name: 'Equipo', icon: Users }
   ];
-
-  if (isAdmin) {
-    menuItems.push({ id: 'members', name: 'Miembros', icon: Users });
-  }
 
   return (
     <aside className="sidebar">
@@ -30,9 +25,10 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewTaskClick, mem
         <p>Centro simple del equipo</p>
       </div>
 
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" aria-label="Navegacion principal">
         {menuItems.map((item) => {
           const Icon = item.icon;
+
           return (
             <button
               key={item.id}
@@ -47,17 +43,18 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewTaskClick, mem
       </nav>
 
       <div className="sidebar-footer">
+        <ThemeToggle />
         <button className="btn btn-primary" onClick={onNewTaskClick} style={{ width: '100%' }}>
           <Plus size={18} />
-          <span>Nueva Tarea</span>
+          <span>Nueva tarea</span>
         </button>
-        <button 
-          onClick={onLogout} 
-          className="nav-link" 
+        <button
+          onClick={onLogout}
+          className="nav-link danger-link"
           style={{ width: '100%', justifyContent: 'flex-start', border: 'none', background: 'none' }}
         >
           <LogOut size={18} />
-          <span>Cerrar Sesión</span>
+          <span>Cerrar sesion</span>
         </button>
       </div>
     </aside>

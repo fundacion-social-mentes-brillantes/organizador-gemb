@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useState } from 'react';
 import { LogIn } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const { loginWithGoogle, loading } = useAuth();
@@ -11,8 +11,8 @@ export default function Login() {
     try {
       await loginWithGoogle();
     } catch (err) {
-      setError('Error al iniciar sesión con Google. Inténtalo de nuevo.');
-      console.error(err);
+      setError('Error al iniciar sesion con Google. Intentalo de nuevo.');
+      console.error('Google login failed:', err?.code || err?.name || 'unknown_error');
     }
   };
 
@@ -28,22 +28,14 @@ export default function Login() {
         </div>
 
         {error && (
-          <div style={{ 
-            color: 'var(--danger)', 
-            fontSize: '0.85rem', 
-            backgroundColor: 'var(--danger-bg)', 
-            padding: '0.5rem 1rem', 
-            borderRadius: 'var(--radius-sm)', 
-            width: '100%',
-            textAlign: 'center'
-          }}>
+          <div className="form-error">
             {error}
           </div>
         )}
 
-        <button 
-          className="btn-google-login" 
-          onClick={handleLogin} 
+        <button
+          className="btn-google-login"
+          onClick={handleLogin}
           disabled={loading}
           style={{ width: '100%' }}
         >
@@ -52,7 +44,7 @@ export default function Login() {
         </button>
 
         <div className="login-footer">
-          <p>Acceso solo para miembros autorizados</p>
+          <p>Tu perfil queda activo al entrar con Google</p>
         </div>
       </div>
     </div>

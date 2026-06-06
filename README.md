@@ -1,94 +1,40 @@
-# Organizador de Tareas GEMB (Web + Android PWA/Capacitor)
+# Organizador GEMB
 
-Este es un organizador de tareas minimalista, elegante y rápido diseñado para el equipo de **Gimnasio Emocional Mentes Brillantes**. Reemplaza el uso de Notion con un tablero compartido global donde todo el equipo visualiza y edita las tareas en tiempo real. 
+Organizador de tareas minimalista para el equipo de Gimnasio Emocional Mentes Brillantes. Funciona como web/PWA y esta preparado para Android con Capacitor.
 
-El proyecto está construido con **React (Vite)**, **Cloud Firestore** y **Firebase Authentication**, y está preparado tanto para usarse como **aplicación Web/PWA** como para compilarse en una **App Android nativa** mediante **Capacitor**.
+## Stack
 
----
+- React + Vite
+- Firebase Authentication con Google
+- Cloud Firestore
+- PWA con `vite-plugin-pwa`
+- Capacitor Android
 
-## 🚀 Requisitos Previos
+## Modelo de acceso
 
-Asegúrate de tener instalado en tu computadora:
-- [Node.js](https://nodejs.org/) (versión 18 o superior recomendada)
-- [Android Studio](https://developer.android.com/studio) (requerido únicamente para compilar la aplicación Android)
+- Todos los usuarios que entran con Google se crean como miembros activos.
+- Todos los miembros tienen los mismos permisos.
+- No existe usuario administrador en la aplicacion.
+- El campo `role` puede existir por compatibilidad con datos antiguos, pero no se usa para permisos.
+- Un perfil antiguo con `role: "admin"` se trata igual que cualquier miembro.
+- La vista `Equipo` solo muestra miembros registrados y actividad reciente, sin controles de rol o suspension.
 
----
+## Variables de entorno
 
-## 📦 1. Instalación de Dependencias
-
-Para instalar todas las librerías necesarias del proyecto, abre la terminal en la raíz del proyecto y ejecuta:
-
-```bash
-npm install
-```
-
----
-
-## ⚙️ 2. Configuración en la Consola de Firebase
-
-### A. Crear/Seleccionar el Proyecto Firebase
-El proyecto Firebase ya está registrado:
-- **Project ID**: `organizador-de-tareas-a9174`
-- **Project Number**: `1096261404550`
-
-### B. Registrar Aplicaciones en Firebase
-Debes registrar dos aplicaciones en la consola de tu proyecto Firebase:
-
-1. **App Web**:
-   - Ve a *Configuración del Proyecto* > *General* y haz clic en **Añadir aplicación** (ícono `</>`).
-   - Nómbrala `Organizador GEMB Web`.
-   - Copia las credenciales generadas para agregarlas a tu archivo de variables de entorno `.env` (ver sección siguiente).
-
-2. **App Android**:
-   - Haz clic en **Añadir aplicación** (ícono de Android).
-   - Registra el nombre de paquete: **`com.gemb.organizador`** (este es el paquete configurado en Capacitor).
-   - Nómbrala `Organizador GEMB Android`.
-   - Genera y descarga el archivo **`google-services.json`** y colócalo en la carpeta del proyecto en la ruta:
-     `android/app/google-services.json`
-   - *Nota*: Deja la aplicación Android antigua (`com.aistudio.organizadortareas.axtrc`) sin borrar por si se necesita en el futuro.
-
-### C. Activar Google Authentication
-1. En el menú de Firebase, ve a **Build** > **Authentication** > **Sign-in method**.
-2. Haz clic en **Añadir nuevo proveedor** y selecciona **Google**.
-3. Actívalo, ingresa el correo de soporte y guarda los cambios.
-4. **Para Android (Capacitor)**:
-   - Ve a la sección de configuración de Google Provider.
-   - Copia el **ID de cliente web (Client ID)** (usualmente termina en `.apps.googleusercontent.com`).
-   - Reemplaza este Client ID en el archivo `capacitor.config.json` en la sección `GoogleAuth.serverClientId` si decides implementar el plugin de Google Auth nativo.
-
-### D. Configurar Huellas SHA-1 / SHA-256 para Android
-Para que el inicio de sesión con Google funcione correctamente dentro de la App Android:
-1. Genera las firmas SHA-1 y SHA-256 de tu llave de firmas en Android Studio (o mediante la terminal usando `keytool`).
-2. Copia estas firmas.
-3. En la consola de Firebase, ve a **Configuración del proyecto** > **Tus aplicaciones** > Selecciona tu aplicación Android (`com.gemb.organizador`) > Haz clic en **Añadir huella digital** y pega los valores SHA-1 y SHA-256.
-
-### E. Dominios Autorizados (para Login Web)
-En **Authentication** > **Ajustes** > **Dominios autorizados**, asegúrate de añadir:
-- `localhost` (para desarrollo local)
-- El dominio de producción en donde despliegues tu aplicación web (ej. `organizador-gemb.vercel.app`).
-
----
-
-## 🔑 3. Configuración de Variables de Entorno
-
-Crea un archivo llamado `.env` en la raíz del proyecto. Puedes tomar como base el archivo `.env.example` y rellenarlo con las credenciales de tu **App Web de Firebase**:
+No subas `.env` ni valores reales de Firebase al repositorio. Configura estas variables en local y en Vercel:
 
 ```env
-VITE_FIREBASE_API_KEY=tu_api_key_aqui
-VITE_FIREBASE_AUTH_DOMAIN=organizador-de-tareas-a9174.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=organizador-de-tareas-a9174
-VITE_FIREBASE_STORAGE_BUCKET=organizador-de-tareas-a9174.firebasestorage.app
-VITE_FIREBASE_MESSAGING_SENDER_ID=1096261404550
-VITE_FIREBASE_APP_ID=tu_app_id_aqui
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
 ```
 
----
+## Reglas Firestore
 
-## 🔒 4. Publicar Reglas de Seguridad en Cloud Firestore
-
-> **Modelo de acceso actualizado**: Cualquier usuario que inicie sesión con Google se registra automáticamente como miembro activo (`active: true`, `role: "member"`). La pantalla de "Cuenta Suspendida" solo aparece si un administrador suspende manualmente a un usuario.
-
-Las reglas del archivo `firestore.rules` del proyecto deben pegarse en la pestaña **Rules** de la sección Firestore en la consola de Firebase:
+Pega el contenido de `firestore.rules` en Firebase Console > Firestore Database > Rules.
 
 ```javascript
 rules_version = '2';
@@ -106,120 +52,135 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/members/$(request.auth.uid)).data.active == true;
     }
 
-    function isAdmin() {
+    function memberIdentityIsValid(userId) {
+      return request.auth.uid == userId
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.active == true;
+    }
+
+    function memberCreateShapeIsSafe() {
+      return request.resource.data.keys().hasOnly([
+        'uid',
+        'email',
+        'displayName',
+        'photoURL',
+        'role',
+        'active',
+        'createdAt'
+      ])
+      && request.resource.data.keys().hasAll(['uid', 'email', 'active', 'createdAt'])
+      && request.resource.data.get('role', 'member') == 'member'
+      && request.resource.data.get('displayName', '') is string
+      && request.resource.data.get('photoURL', '') is string
+      && request.resource.data.createdAt == request.time;
+    }
+
+    function immutableMemberFieldsStayPut() {
+      return request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.get('role', null) == resource.data.get('role', null)
+        && request.resource.data.get('createdAt', null) == resource.data.get('createdAt', null);
+    }
+
+    function safeProfileFields() {
+      return request.resource.data.get('displayName', '') is string
+        && request.resource.data.get('photoURL', '') is string;
+    }
+
+    function safeProfileUpdate() {
       return isMember()
-        && get(/databases/$(database)/documents/members/$(request.auth.uid)).data.role == "admin";
+        && request.resource.data.active == resource.data.active
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName',
+          'photoURL',
+          'updatedAt'
+        ])
+        && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time)
+        && safeProfileFields();
+    }
+
+    function legacySelfActivation() {
+      return signedIn()
+        && resource.data.active != true
+        && request.resource.data.active == true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'active',
+          'displayName',
+          'photoURL',
+          'updatedAt'
+        ])
+        && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time)
+        && safeProfileFields();
     }
 
     match /members/{userId} {
-      // Any active member can read the full members list
-      allow read: if isMember();
-      // Any authenticated user can create their OWN member document (auto-registration)
-      allow create: if signedIn() && request.auth.uid == userId;
-      // Only admins can update or delete any member document
-      allow update, delete: if isAdmin();
+      allow get: if signedIn() && request.auth.uid == userId;
+      allow list: if isMember();
+
+      allow create: if signedIn()
+        && memberIdentityIsValid(userId)
+        && memberCreateShapeIsSafe();
+
+      allow update: if signedIn()
+        && request.auth.uid == userId
+        && immutableMemberFieldsStayPut()
+        && (safeProfileUpdate() || legacySelfActivation());
+
+      allow delete: if false;
     }
 
     match /tasks/{taskId} {
-      // Any active member can read all tasks (shared global board)
       allow read: if isMember();
-      // Any active member can create tasks
       allow create: if isMember();
-      // Any active member can update tasks (edit, status, archive)
       allow update: if isMember();
-      // Only admins can permanently delete tasks
-      allow delete: if isAdmin();
+      allow delete: if isMember();
     }
 
     match /activity/{activityId} {
       allow read: if isMember();
       allow create: if isMember();
-      // Activity log entries are immutable
       allow update, delete: if false;
     }
   }
 }
 ```
 
----
+La regla `legacySelfActivation()` solo permite que un usuario autenticado reactive su propio documento antiguo si estaba en `active: false`. No permite cambiar `uid`, `email`, `role` ni `createdAt`.
 
-## 👥 4b. Modelo de Acceso y Roles
-
-| Acción | Miembro | Administrador |
-|---|---|---|
-| Ver tablero global de tareas | ✅ | ✅ |
-| Crear tareas | ✅ | ✅ |
-| Editar tareas | ✅ | ✅ |
-| Cambiar estado de tareas | ✅ | ✅ |
-| Archivar tareas | ✅ | ✅ |
-| Eliminar tareas definitivamente | ❌ | ✅ |
-| Ver lista de miembros | ✅ | ✅ |
-| Cambiar roles de miembros | ❌ | ✅ |
-| Suspender miembros (`active: false`) | ❌ | ✅ |
-
-**Registro automático**: Cualquier persona con cuenta Google que acceda a la app queda registrada automáticamente como miembro activo. El correo `fundacionsocial@gimnasioemocionalmb.com` siempre se registra como administrador.
-
----
-
-## 💻 5. Ejecución Local (Web)
-
-Para iniciar el servidor de desarrollo local para la versión web, ejecuta:
+## Desarrollo local
 
 ```bash
+npm install
 npm run dev
 ```
 
-Esto abrirá la aplicación en `http://localhost:5173`.
-- **Registro abierto**: Cualquier cuenta de Google puede entrar directamente como miembro activo.
-- **Bootstrap de administrador**: La primera vez que `fundacionsocial@gimnasioemocionalmb.com` inicie sesión, el sistema creará automáticamente su perfil de administrador.
+## Build web
 
----
-
-## 📱 6. Instalación como PWA (Progressive Web App)
-
-La aplicación está completamente configurada como una PWA gracias a `vite-plugin-pwa`. Cuando se compila y se despliega en HTTPS:
-- En celulares (Chrome/Safari) o PC (Chrome/Edge), aparecerá el botón **"Instalar aplicación"** o **"Añadir a la pantalla de inicio"**.
-- La aplicación se abrirá en pantalla completa sin barra de navegación del navegador (modo standalone).
-- Guarda en caché los elementos principales permitiendo una carga instantánea y la visualización de la interfaz básica.
-
----
-
-## 🌐 7. Despliegue Web (Vercel / Firebase Hosting)
-
-### Despliegue en Vercel (Recomendado por su rapidez)
-1. Instala el CLI de Vercel (`npm i -g vercel`) o vincula tu cuenta en la web de Vercel.
-2. Ejecuta `vercel` en la terminal de la raíz del proyecto.
-3. Configura el directorio del build como `dist`.
-4. Agrega las mismas variables de entorno del `.env` en la configuración del proyecto en el dashboard de Vercel.
-5. Ejecuta `vercel --prod` para publicar la versión definitiva.
-
----
-
-## 🤖 8. Compilación y Generación de la App Android (Capacitor)
-
-El flujo para actualizar y empaquetar la aplicación en Android consta de los siguientes pasos:
-
-### Paso A: Compilar el código React/Web
-Genera la carpeta `dist` con los recursos optimizados:
 ```bash
 npm run build
 ```
 
-### Paso B: Sincronizar recursos con Android
-Sincroniza los cambios compilados de la carpeta `dist` en el proyecto Android nativo:
+## Android / Capacitor
+
+La configuracion esperada en `capacitor.config.json` es:
+
+```json
+{
+  "appId": "com.gemb.organizador",
+  "appName": "Organizador GEMB",
+  "webDir": "dist"
+}
+```
+
+Despues de cada build web:
+
 ```bash
 npx cap sync android
 ```
 
-### Paso C: Abrir el proyecto en Android Studio
-Para abrir Android Studio directamente con el proyecto nativo listo, ejecuta:
-```bash
-npx cap open android
-```
+No subas `android/app/google-services.json` al repositorio. Si se necesita para compilar Android localmente, colocalo solo en esa ruta local.
 
-### Paso D: Generar el APK o AAB en Android Studio
-Una vez que Android Studio abra el proyecto:
-1. Asegúrate de colocar el archivo `google-services.json` descargado de Firebase en la ruta `android/app/google-services.json` (puedes copiarlo directamente desde la vista del proyecto).
-2. Espera a que Gradle termine de indexar el proyecto.
-3. En la barra superior, selecciona **Build** > **Build Bundle(s) / APK(s)** > **Build APK(s)** para generar un archivo instalable en pruebas.
-4. Para publicar en Play Store, selecciona **Build** > **Generate Signed Bundle / APK...**, selecciona **Android App Bundle** y fírmalo con tu llave de producción.
+## Despliegue
+
+Vercel debe tener configuradas las variables de entorno anteriores en el dashboard del proyecto. Al hacer push a `main`, Vercel dispara el despliegue de produccion conectado al repositorio.
