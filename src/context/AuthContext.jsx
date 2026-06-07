@@ -3,6 +3,7 @@ import {
   signInWithPopup, 
   signInWithRedirect, 
   signInWithCredential, 
+  getRedirectResult,
   GoogleAuthProvider, 
   onAuthStateChanged, 
   signOut 
@@ -10,6 +11,14 @@ import {
 import { Capacitor } from '@capacitor/core';
 import { auth, googleProvider, firebaseConfigReady } from '../lib/firebase';
 import { getMember, createMember, activateOwnMemberProfile } from '../services/membersService';
+import {
+  clearRedirectStart,
+  rememberRedirectStart,
+  shouldBlockIOSLogin,
+  shouldFallbackToRedirect,
+  shouldUseRedirectLogin
+} from '../utils/platform';
+import { getAuthErrorCode, getFriendlyAuthMessage } from '../utils/authErrors';
 
 const AuthContext = createContext(null);
 
@@ -25,14 +34,13 @@ const getNativeGoogleAuth = async () => {
   }
 };
 
-const getErrorCode = (error) => error?.code || error?.name || 'unknown_error';
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [memberProfile, setMemberProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
   const [configError] = useState(!firebaseConfigReady);
+  const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
     if (!firebaseConfigReady || !auth || !googleProvider) {
@@ -40,18 +48,35 @@ export const AuthProvider = ({ children }) => {
       return undefined;
     }
 
+    let cancelled = false;
+
     // Initialize native Google Auth if running inside Capacitor
     if (Capacitor.isNativePlatform()) {
       getNativeGoogleAuth().then(({ GoogleAuth }) => {
         GoogleAuth.initialize();
       }).catch((error) => {
-        console.warn('Capacitor Google Auth plugin not ready:', getErrorCode(error));
+        console.warn('Capacitor Google Auth plugin not ready:', getAuthErrorCode(error));
       });
+    }
+
+    if (!Capacitor.isNativePlatform() && !shouldBlockIOSLogin()) {
+      getRedirectResult(auth)
+        .then(() => {
+          clearRedirectStart();
+        })
+        .catch((error) => {
+          clearRedirectStart();
+          if (!cancelled) {
+            setAuthError(getFriendlyAuthMessage(error));
+          }
+          console.warn('Firebase redirect result failed:', getAuthErrorCode(error));
+        });
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setLoading(true);
       if (firebaseUser) {
+        setAuthError(null);
         setUser(firebaseUser);
         try {
           let profile = await getMember(firebaseUser.uid);
@@ -78,7 +103,7 @@ export const AuthProvider = ({ children }) => {
           setMemberProfile(normalizedProfile);
           setUnauthorized(!normalizedProfile);
         } catch (error) {
-          console.error('Error loading member profile:', getErrorCode(error));
+          console.error('Error loading member profile:', getAuthErrorCode(error));
           setUnauthorized(true);
         }
       } else {
@@ -89,7 +114,10 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   const loginWithGoogle = async () => {
@@ -97,6 +125,14 @@ export const AuthProvider = ({ children }) => {
       throw new Error('firebase_config_unavailable');
     }
 
+    if (!Capacitor.isNativePlatform() && shouldBlockIOSLogin()) {
+      const error = new Error('ios_in_app_browser');
+      error.code = 'auth/ios-in-app-browser';
+      setAuthError(getFriendlyAuthMessage(error));
+      throw error;
+    }
+
+    setAuthError(null);
     setLoading(true);
     try {
       if (Capacitor.isNativePlatform()) {
@@ -106,14 +142,30 @@ export const AuthProvider = ({ children }) => {
           const credential = GoogleAuthProvider.credential(nativeUser.authentication.idToken);
           await signInWithCredential(auth, credential);
         } catch (error) {
-          console.warn('Native Google login fallback:', getErrorCode(error));
+          console.warn('Native Google login fallback:', getAuthErrorCode(error));
+          rememberRedirectStart();
           await signInWithRedirect(auth, googleProvider);
         }
+      } else if (shouldUseRedirectLogin()) {
+        rememberRedirectStart();
+        await signInWithRedirect(auth, googleProvider);
       } else {
-        await signInWithPopup(auth, googleProvider);
+        try {
+          await signInWithPopup(auth, googleProvider);
+        } catch (error) {
+          if (!shouldFallbackToRedirect(error)) {
+            throw error;
+          }
+
+          console.warn('Google popup fallback to redirect:', getAuthErrorCode(error));
+          rememberRedirectStart();
+          await signInWithRedirect(auth, googleProvider);
+        }
       }
     } catch (error) {
-      console.error('Login failed:', getErrorCode(error));
+      const friendlyMessage = getFriendlyAuthMessage(error);
+      setAuthError(friendlyMessage);
+      console.error('Login failed:', getAuthErrorCode(error));
       setLoading(false);
       throw error;
     }
@@ -127,19 +179,31 @@ export const AuthProvider = ({ children }) => {
           const { GoogleAuth } = await getNativeGoogleAuth();
           await GoogleAuth.signOut();
         } catch (error) {
-          console.warn('Native Google sign out failed:', getErrorCode(error));
+          console.warn('Native Google sign out failed:', getAuthErrorCode(error));
         }
       }
       await signOut(auth);
     } catch (error) {
-      console.error('Logout failed:', getErrorCode(error));
+      console.error('Logout failed:', getAuthErrorCode(error));
     } finally {
       setLoading(false);
     }
   };
 
+  const clearAuthError = () => setAuthError(null);
+
   return (
-    <AuthContext.Provider value={{ user, memberProfile, loading, unauthorized, configError, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{
+      user,
+      memberProfile,
+      loading,
+      unauthorized,
+      configError,
+      authError,
+      clearAuthError,
+      loginWithGoogle,
+      logout
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -10,6 +10,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: [
         'favicon.png',
+        'apple-touch-icon.png',
         'pwa-192x192.png',
         'pwa-512x512.png',
         'brand/logo-light.png',
@@ -23,6 +24,10 @@ export default defineConfig({
         name: 'Organizador GEMB',
         short_name: 'GEMB Tareas',
         description: 'Organizador de Tareas de Gimnasio Emocional Mentes Brillantes',
+        lang: 'es',
+        start_url: '/',
+        scope: '/',
+        id: '/',
         theme_color: '#102A56',
         background_color: '#F8F7F4',
         display: 'standalone',

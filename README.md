@@ -32,6 +32,47 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 ```
 
+En produccion, `VITE_FIREBASE_AUTH_DOMAIN` debe apuntar al dominio de la app:
+
+```env
+VITE_FIREBASE_AUTH_DOMAIN=organizador-tareas-gemb.vercel.app
+```
+
+En desarrollo local puedes usar el dominio Firebase original si ya lo tienes configurado.
+
+## Auth en iPhone, Safari y PWA
+
+La app esta publicada en Vercel, no en Firebase Hosting. Para que `signInWithRedirect` funcione bien en Safari/iOS y en la PWA, `vercel.json` incluye un proxy transparente:
+
+```json
+{
+  "rewrites": [
+    {
+      "source": "/__/auth/:path*",
+      "destination": "https://organizador-de-tareas-a9174.firebaseapp.com/__/auth/:path*"
+    }
+  ]
+}
+```
+
+Pasos manuales obligatorios en Firebase/Google:
+
+- Firebase Console > Authentication > Settings > Authorized domains: agregar `organizador-tareas-gemb.vercel.app`.
+- Google Cloud OAuth / Firebase Auth: verificar o agregar este redirect URI:
+
+```text
+https://organizador-tareas-gemb.vercel.app/__/auth/handler
+```
+
+En iPhone, WhatsApp, Instagram, Facebook, Messenger, Gmail y otros navegadores internos pueden bloquear `sessionStorage`. La app detecta esos casos y muestra una pantalla amable para abrir el enlace en Safari antes de iniciar sesion.
+
+Instalacion recomendada en iPhone:
+
+1. Abrir `https://organizador-tareas-gemb.vercel.app` en Safari.
+2. Iniciar sesion con Google.
+3. Tocar Compartir.
+4. Elegir Anadir a pantalla de inicio.
+
 ## Identidad visual por tema
 
 Los assets de marca viven en `public/brand/`:

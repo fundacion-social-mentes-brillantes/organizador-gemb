@@ -2,9 +2,16 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
+const PRODUCTION_AUTH_DOMAIN = 'organizador-tareas-gemb.vercel.app';
+const runtimeHost = typeof window !== 'undefined' ? window.location.hostname : '';
+const configuredAuthDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN;
+const authDomain = import.meta.env.PROD && runtimeHost === PRODUCTION_AUTH_DOMAIN
+  ? PRODUCTION_AUTH_DOMAIN
+  : configuredAuthDomain || (import.meta.env.PROD ? PRODUCTION_AUTH_DOMAIN : undefined);
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  authDomain,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
